@@ -61,8 +61,6 @@ class SamlAttributeMap:
 
     def create_attribute_value_element(self):
         val = self.create_element('AttributeValue')
-        #val.set('xmlns:xs', 'http://www.w3.org/2001/XMLSchema')
-        #val.set('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
         return val
 
     def get_xml_attribute_value(self):
