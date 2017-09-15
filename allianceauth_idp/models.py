@@ -44,18 +44,12 @@ class ServiceProvider(models.Model):
         pass
 
 
-class DeepLink(models.Model):
-    name = models.CharField(max_length=50, null=False)
-
-    def __str__(self):
-        return self.name
-
-
 class SamlAttribute(models.Model):
     AAUTH_ATTR_CHOICES = (
         (mapping.Username.NAME, 'Alliance Auth Username'),
         (mapping.Email.NAME, 'Alliance Auth Email'),
         (mapping.CharacterName.NAME, 'Main Characters Name'),
+        (mapping.CharacterID.NAME, 'Main Characters ID'),
         (mapping.CorpName.NAME, 'Main Characters Corporation Name'),
         (mapping.CorpID.NAME, 'Main Characters Corporation ID'),
         (mapping.CorpTicker.NAME, 'Main Characters Corporation Ticker'),
