@@ -8,14 +8,16 @@ class ServiceProviderAdmin(admin.ModelAdmin):
     filter_horizontal = ('groups_can_access', 'users_can_access')
 
 
+class SamlAttributeInline(admin.TabularInline):
+    model = SamlAttribute
+
+
 class AttributeMappingAdmin(admin.ModelAdmin):
-    pass
-
-
-class SamlAttributeAdmin(admin.ModelAdmin):
-    pass
+    inlines = [
+        SamlAttributeInline,
+    ]
 
 
 admin.site.register(ServiceProvider, ServiceProviderAdmin)
 admin.site.register(AttributeMapping, AttributeMappingAdmin)
-admin.site.register(SamlAttribute, SamlAttributeAdmin)
+
