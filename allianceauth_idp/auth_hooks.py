@@ -1,10 +1,13 @@
-from alliance_auth import hooks
-from services.hooks import ServicesHook
-
-from django.conf.urls import url, include
 import saml2idp.urls
 
+from alliance_auth import hooks
+from services.hooks import ServicesHook
+from .views import login_init_idp_sso
+
+from django.conf.urls import url, include
+
 urlpatterns = [
+    url('^idp/init/sso/(?P<provider_id>[0-9]+)', login_init_idp_sso, name='login_init_idp_sso'),
     url('^idp/', include(saml2idp.urls)),
 ]
 

@@ -46,14 +46,17 @@ class AllianceAuthProcessor(base.Processor):
             return
         raise exceptions.CannotHandleAssertion(_("User is not authorized to use this service provider"))
 
-    def init_deep_link(self, request, sp_config, url):
+    def _reset(self, django_request, sp_config=None):
+        self._service_provider = None
+        super(AllianceAuthProcessor, self)._reset(django_request, sp_config)
+
+    def init_idp_sso(self, request, service_provider, sp_config=None):
         """
-        Initialize this Processor to make an IdP-initiated call to the SP's
-        deep-linked URL.
+        Initialize this Processor to make an IdP-initiated call to the SP
         """
-        self._reset(request, sp_config)
-        self._service_provider = ServiceProvider.objects.all()[0] # TODO: Temp placeholder
-        acs_url = self._service_provider.acs_url # TODO: Temp placeholder
+        self._reset(request)
+        self._service_provider = service_provider
+        acs_url = self._service_provider.acs_url
         # NOTE: The following request params are made up. Some are blank,
         # because they comes over in the AuthnRequest, but we don't have an
         # AuthnRequest in this case:
@@ -64,7 +67,6 @@ class AllianceAuthProcessor(base.Processor):
             'DESTINATION': '',
             'PROVIDER_NAME': '',
         }
-        self._relay_state = url
 
     def _format_response(self):
         """
