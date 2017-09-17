@@ -14,20 +14,6 @@ class AllianceAuthProcessor(base.Processor):
             config['acs_url'] = ''
         super(AllianceAuthProcessor, self).__init__(config, name)
 
-    def _decode_request(self):
-        """
-        Decodes _request_xml from _saml_request.
-        """
-        # Try non-gzip first
-        super(AllianceAuthProcessor, self)._decode_request()
-
-        # Is it XML yet?
-        if not self._request_xml.strip().startswith(b'<'):
-            # Try decode and inflate
-            self._request_xml = codex.decode_base64_and_inflate(self._saml_request)
-
-        self._logger.debug('SAML request decoded: '.format(self._request_xml))
-
     def _validate_request(self):
         """
         Validates the _saml_request. Sub-classes should override this and
@@ -38,6 +24,14 @@ class AllianceAuthProcessor(base.Processor):
             self._logger.debug(self._request_params['ACS_URL'])
             raise exceptions.CannotHandleAssertion(_("AssertionConsumerService is not a AllianceAuth IdP."))
         self._service_provider = ServiceProvider.objects.get(acs_url=self._request_params['ACS_URL'])
+
+        # Is signing required? Check the request is signed
+        # and revalidate using the stored certificate
+        if self._service_provider.require_signed_requests:
+            assert self._request.signed
+            self._request._signed_data = False
+            self._request.parse_signed(self._service_provider.x509_cert)
+            assert self._request.signed_data
 
     def _validate_user(self):
         user = get_user(self._django_request)
@@ -72,37 +66,12 @@ class AllianceAuthProcessor(base.Processor):
         """
         Formats _response_params as _response_xml.
         """
-        self._response_xml = xml_render.get_response_xml(self._response_params, signed=self._service_provider.signed)
+        self._response_xml = xml_render.get_response_xml(self._response_params, self._assertion_xml,
+                                                         signed=self._service_provider.signed)
 
     def _format_assertion(self):
-        self._assertion_xml = self._get_assertion_xml(xml_templates.ASSERTION_GOOGLE_APPS,
-                                                      self._assertion_params, signed=self._service_provider.signed)
-
-    def _get_assertion_xml(self, template, parameters, signed=False):
-        # Reset signature.
-        params = {}
-        params.update(parameters)
-        params['ASSERTION_SIGNATURE'] = ''
-        template = string.Template(template)
-
-        xml_render._get_in_response_to(params)
-        xml_render._get_subject(params)  # must come before _get_attribute_statement()
-        params['ATTRIBUTE_STATEMENT'] = self._get_attribute_statement()
-
-        unsigned = template.substitute(params)
-        self._logger.debug('Unsigned:')
-        self._logger.debug(unsigned)
-        if not signed:
-            return unsigned
-
-        # Sign it.
-        signature_xml = xml_signing.get_signature_xml(unsigned, params['ASSERTION_ID'])
-        params['ASSERTION_SIGNATURE'] = signature_xml
-        signed = template.substitute(params)
-
-        self._logger.debug('Signed:')
-        self._logger.debug(signed)
-        return signed
+        self._assertion_xml = xml_render._get_assertion_xml(
+            xml_templates.AssertionGoogleAppsTemplate, self._assertion_params, signed=self._service_provider.signed)
 
     def _get_attribute_statement(self):
         mapped = ''

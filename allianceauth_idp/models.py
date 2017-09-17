@@ -30,12 +30,23 @@ class ServiceProvider(models.Model):
                                help_text=_("Assertion Consumer Service URL"))
     signed = models.BooleanField(default=True,
                                  help_text=_("Cryptographically Sign the SAML Response."))
+
+    x509_cert = models.TextField(default='', blank=True, help_text='The Service Providers X509 certificate from their '
+                                                                   'metadata.')
+    require_signed_requests = models.BooleanField(default=True, help_text='Require this Service Provider send only '
+                                                                          'signed SAML requests. You must provide a '
+                                                                          'X509 certificate, otherwise the provided '
+                                                                          'certificate in the request is used, leading '
+                                                                          'to an insecure signature verification which '
+                                                                          'is effectively the same as setting this '
+                                                                          'value to False.')
+    attribute_mapping = models.ForeignKey(AttributeMapping, default=None, null=True,
+                                          help_text='Attribute mapping to send to this Service Provider with the '
+                                                    'SAML response.')
     groups_can_access = models.ManyToManyField(Group, blank=True,
                                                help_text=_("Groups can access this service provider"))
     users_can_access = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True,
                                               help_text=_("Users can access this service provider"))
-
-    attribute_mapping = models.ForeignKey(AttributeMapping, default=None, null=True)
 
     def __str__(self):
         return self.name
